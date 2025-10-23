@@ -17,7 +17,7 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
         AuthRepository(db.userDao())
     }
 
-    // 👇 Ahora son estados observables por Compose
+    //  Ahora son estados observables por Compose
     var error: String? by mutableStateOf(null)
         private set
 

@@ -12,6 +12,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duoc.basico.model.CartItemEntity
 import cl.duoc.basico.viewmodel.CartViewModel
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -21,6 +31,11 @@ fun CarritoScreen(
     cartViewModel: CartViewModel = viewModel()
 ) {
     val state by cartViewModel.state.collectAsState()
+
+    // 🔸 Estados y scope SOLO para el botón Comprar
+    var isLoading by remember { mutableStateOf(false) }
+    var showCongrats by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -83,21 +98,56 @@ fun CarritoScreen(
 
                 Spacer(Modifier.height(8.dp))
 
+                // 🔘 Botón "Comprar" con animación de espera y alerta al finalizar
                 Button(
-                    onClick = { /* TODO: flujo de compra */ },
+                    onClick = {
+                        if (isLoading) return@Button
+                        isLoading = true
+                        scope.launch {
+                            kotlinx.coroutines.delay(2000) // ⏱️ espera simulada
+                            isLoading = false
+                            showCongrats = true
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Black, // 🔹 Fondo negro
                         contentColor = Color.White    // 🔹 Texto blanco
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = state.items.isNotEmpty() && !isLoading
                 ) {
-                    Text("Comprar", fontWeight = FontWeight.Bold)
+                    if (isLoading) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text("Procesando…", fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        Text("Comprar", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
     }
 
+    // Alerta tras completar la “compra”
+    if (showCongrats) {
+        AlertDialog(
+            onDismissRequest = { showCongrats = false },
+            title = { Text("Compra realizada") },
+            text = { Text("Felicidades por comprar en NINTAI") },
+            confirmButton = {
+                TextButton(onClick = { showCongrats = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 }
+
 
 @Composable
 private fun CartRow(

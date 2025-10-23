@@ -23,6 +23,6 @@ class AuthRepository(private val userDao: UserDao) {
 
     suspend fun login(email: String, password: String): Boolean {
         val user = userDao.findByEmail(email) ?: return false
-        return user.password == password // demo
+        return user.password == password //
     }
 }
