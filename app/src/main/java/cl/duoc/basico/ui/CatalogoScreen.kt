@@ -5,30 +5,40 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duoc.basico.R
 import cl.duoc.basico.viewmodel.CartViewModel
-import androidx.compose.ui.graphics.Color
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 
+// ── Modelo + demo ──
+data class Product(
+    val id: String,
+    val name: String,
+    val price: Double,
+    @DrawableRes val imageRes: Int? = null
+)
 
-// ── Modelo + demo (mueve esto a otro archivo si ya lo tienes definido) ──
-data class Product(val id: String, val name: String, val price: Double, @DrawableRes val imageRes: Int? = null)
 val demoProducts = listOf(
-    Product("camisa_sakura", "Camisa Sakura", 54990.0,R.drawable.camisa_nintai),
-    Product("polera",    "Destroy Tee",      39990.0, R.drawable.polera_nintai),
-    Product("drapped",     "Draped Tee",     19990.0, R.drawable.drapped_nintai),
+    Product("camisa_sakura", "Camisa Sakura", 54990.0, R.drawable.camisa_nintai),
+    Product("polera",        "Destroy Tee",   39990.0, R.drawable.polera_nintai),
+    Product("drapped",       "Draped Tee",    19990.0, R.drawable.drapped_nintai),
+    Product("chaqueta",       "Chaqueta Coat",    30000.0, R.drawable.prenda1),
+    Product("pantalones",       "Pantalon Coat",    35000.0, R.drawable.prenda2),
+    Product("shirt",       "Yami Shirt",    81000.0, R.drawable.prenda3),
+    Product("pantalon_hakama",       "Pantalon Hakama",    66000.0, R.drawable.prenda4),
+    Product("pantalon_ballon",       "Pantalon Ballon",    75000.0, R.drawable.prenda5),
+    Product("shirt_fencing",       "Shirt Fencing",    80000.0, R.drawable.prenda6),
+    Product("pantalon_hakamav1",       "Pantalon Hakama V1",    67000.0, R.drawable.prenda7),
+    Product("pantalon_hakamav2",       "Pantalon Hakama V2",    62990.0, R.drawable.prenda8),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,8 +48,23 @@ fun CatalogoScreen(
     onBack: () -> Unit,
     cartViewModel: CartViewModel = viewModel()
 ) {
-    // Observamos el carrito para conocer la cantidad actual de cada producto
+    // Observamos el carrito
     val cartState by cartViewModel.state.collectAsState()
+
+    // 🔍 estado del buscador
+    var searchQuery by remember { mutableStateOf("") }
+
+    // Lista filtrada según el texto
+    val filteredProducts = remember(searchQuery, cartState) {
+        if (searchQuery.isBlank()) {
+            demoProducts
+        } else {
+            demoProducts.filter { prod ->
+                prod.name.contains(searchQuery, ignoreCase = true) ||
+                        prod.id.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -56,7 +81,7 @@ fun CatalogoScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF121212), // fondo oscuro
+                    containerColor = Color(0xFF121212),
                     titleContentColor = Color.White,
                     navigationIconContentColor = Color.White,
                     actionIconContentColor = Color.White
@@ -64,33 +89,53 @@ fun CatalogoScreen(
             )
         }
     ) { p ->
-        LazyColumn(
-            contentPadding = p,
+        Column(
             modifier = Modifier
+                .padding(p)
                 .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(12.dp)
         ) {
-            items(demoProducts, key = { it.id }) { prod ->
-                val qty = cartState.items.firstOrNull { it.productId == prod.id }?.qty ?: 0
 
-                ProductCard(
-                    product = prod,
-                    qty = qty,
-                    onPlus = {
-                        // +1 (crea o incrementa en Room)
-                        cartViewModel.add(prod.id, prod.name, prod.price, prod.imageRes)
-                    },
-                    onMinus = {
-                        // -1 (si llega a 0, lo borra)
-                        val item = cartState.items.firstOrNull { it.productId == prod.id }
-                        if (item != null) cartViewModel.decrement(item)
-                    }
-                )
+            // 🔍 Caja de búsqueda
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Buscar producto") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar"
+                    )
+                },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+            )
+
+            // 📋 Lista de productos (filtrada)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(filteredProducts, key = { it.id }) { prod ->
+                    val qty = cartState.items.firstOrNull { it.productId == prod.id }?.qty ?: 0
+
+                    ProductCard(
+                        product = prod,
+                        qty = qty,
+                        onPlus = {
+                            cartViewModel.add(prod.id, prod.name, prod.price, prod.imageRes)
+                        },
+                        onMinus = {
+                            val item = cartState.items.firstOrNull { it.productId == prod.id }
+                            if (item != null) cartViewModel.decrement(item)
+                        }
+                    )
+                }
             }
         }
     }
-
 }
 
 @Composable
@@ -118,7 +163,6 @@ private fun ProductCard(
                 Text("$${"%,.0f".format(product.price)}")
             }
 
-            // Contador: –  +
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -148,3 +192,4 @@ private fun ProductCard(
         }
     }
 }
+

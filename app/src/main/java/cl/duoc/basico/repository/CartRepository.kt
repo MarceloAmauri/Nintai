@@ -23,4 +23,9 @@ class CartRepository(private val dao: CartDao) {
     }
 
     suspend fun clear() = dao.clear()
+
+    // 👇 NUEVO: eliminar completamente un ítem del carrito
+    suspend fun removeItem(item: CartItemEntity) {
+        dao.delete(item)   // o deleteById(item.id) según tu CartDao
+    }
 }

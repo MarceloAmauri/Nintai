@@ -165,7 +165,7 @@ private fun CartRow(
                 Text(item.name, fontWeight = FontWeight.SemiBold)
                 Text("x${item.qty}  •  $${"%,.0f".format(item.price)} c/u")
             }
-            TextButton(onClick = onMinus) { Text("1") }
+            TextButton(onClick = onMinus) { Text("X") }
         }
     }
 }

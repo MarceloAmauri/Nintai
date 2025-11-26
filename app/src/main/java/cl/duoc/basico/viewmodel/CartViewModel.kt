@@ -16,20 +16,44 @@ data class CartUiState(
     val total: Double = 0.0
 )
 
-class CartViewModel(app: Application) : AndroidViewModel(app) {
-    private val repo = CartRepository(AppDatabase.get(app).cartDao())
+class CartViewModel(app: Application) : AndroidViewModel(application = app) {
+
+    private val repo = CartRepository(dao = AppDatabase.get(app).cartDao())
 
     val state = repo.observeCart()
-        .map { list -> CartUiState(list, list.sumOf { it.price * it.qty }) }
+        .map { list ->
+            CartUiState(
+                items = list,
+                total = list.sumOf { it.price * it.qty }
+            )
+        }
         .stateIn(viewModelScope, SharingStarted.Eagerly, CartUiState())
 
     fun add(productId: String, name: String, price: Double, imageRes: Int?) {
-        viewModelScope.launch { repo.addOrIncrement(productId, name, price, imageRes) }
+        viewModelScope.launch {
+            repo.addOrIncrement(productId, name, price, imageRes)
+        }
     }
 
     fun decrement(item: CartItemEntity) {
-        viewModelScope.launch { repo.decrementOrRemove(item) }
+        viewModelScope.launch {
+            repo.decrementOrRemove(item)
+        }
     }
 
-    fun clear() { viewModelScope.launch { repo.clear() } }
+    fun clear() {
+        viewModelScope.launch {
+            repo.clear()
+        }
+    }
+
+    // 👇 NUEVO: eliminar COMPLETAMENTE un producto del carrito
+    fun remove(item: CartItemEntity) {
+        viewModelScope.launch {
+            repo.removeItem(item)   // llamamos al repositorio
+        }
+    }
 }
+
+
+
